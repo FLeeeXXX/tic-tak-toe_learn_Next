@@ -28,6 +28,7 @@ export function Game() {
                         <GameCell
                             symbol={symbol}
                             isWinner={winnerSequence?.includes(index)}
+                            key={index}
                             onClick={() => handleCellClick(index)}
                         />
                     ))
