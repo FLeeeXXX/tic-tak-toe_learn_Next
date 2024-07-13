@@ -1,13 +1,9 @@
 import {useState} from "react";
-import {GAME_SYMBOLS, MOVE_ORDER} from "./constants";
+import {GAME_SYMBOLS} from "./constants";
+import {computeWinner, getNextMove} from "./model";
 
-function getNextMove(CurrentMove){
-    const NextMoveIndex = MOVE_ORDER.indexOf(CurrentMove) + 1
-    return MOVE_ORDER[NextMoveIndex] ?? MOVE_ORDER[0];
-}
 
-export function useGameState() {
-
+export function useGameState(playersCount) {
     /*
     Здесь используется функция инициализации. Функция передается как аргумент в useState, и она вызывается только один
     раз при первом рендере компонента. Это полезно, если инициализация состояния является дорогостоящей операцией,
@@ -17,12 +13,15 @@ export function useGameState() {
     процессом, который вы хотите выполнить только один раз, при первом рендере компонента.
     */
 
-    const [{cells, currentMove}, setGameState] = useState(() => ({
+    const [{cells, currentMove, playersTimeOver}, setGameState] = useState(() => ({
         cells: new Array(19 * 19).fill(null),
         currentMove: GAME_SYMBOLS.CROSS,
+        playersTimeOver: [],
     }))
 
-    const nextMove = getNextMove(currentMove);
+    const winnerSequence = computeWinner(cells)
+    const nextMove = getNextMove(currentMove, playersCount, playersTimeOver);
+    const winnerSymbol = nextMove === currentMove ? currentMove : cells[winnerSequence?.[0]];
 
     const handleCellClick = (index) =>{
         setGameState((lastGameState) =>{
@@ -33,8 +32,18 @@ export function useGameState() {
 
             return {
                 ...lastGameState,
-                currentMove: getNextMove(lastGameState.currentMove),
+                currentMove: getNextMove(lastGameState.currentMove, playersCount, lastGameState.playersTimeOver),
                 cells: lastGameState.cells.map((cell, i) => i === index ? lastGameState.currentMove : cell),
+            }
+        })
+    }
+
+    const handlePlayerTimeOver = (symbol) =>{
+        setGameState((lastGameState) =>{
+            return {
+                ...lastGameState,
+                playersTimeOver: [...lastGameState.playersTimeOver, symbol],
+                currentMove: getNextMove(lastGameState.currentMove, playersCount, lastGameState.playersTimeOver),
             }
         })
     }
@@ -44,5 +53,8 @@ export function useGameState() {
         currentMove,
         nextMove,
         handleCellClick,
+        winnerSequence,
+        handlePlayerTimeOver,
+        winnerSymbol
     }
 }
